@@ -1,6 +1,16 @@
 from time import mktime, sleep
 from os import system
 from datetime import datetime, timedelta
+from win10toast import ToastNotifier
+
+
+class CustomToaster:
+    def __init__(self, toast: ToastNotifier):
+        self.toaster = toast
+
+    def print_to_system(self, message):
+        if self.toaster.show_toast('ShutDowner', message, None, 10):
+            print(message)
 
 
 def datetime_to_seconds(date_time: datetime) -> float:
@@ -8,6 +18,7 @@ def datetime_to_seconds(date_time: datetime) -> float:
 
 
 if __name__ == '__main__':
+    notifier = CustomToaster(ToastNotifier())
     everything_is_ok = True
     future_timestamp = None
     try:
@@ -15,23 +26,26 @@ if __name__ == '__main__':
         future_timestamp = (mktime(datetime.now().timetuple())) + datetime_to_seconds(
             datetime.strptime(needle_time_string, '%H:%M:%S'))
     except:
-        print('Что-то пошло не так(')
+        notifier.print_to_system('Что-то пошло не так(')
         everything_is_ok = False
 
     prev_msg_time = 0
+    delay_between_notifications = None
     while everything_is_ok:
         if future_timestamp is None:
             break
         current_timestamp = (mktime(datetime.now().timetuple()))
         difference = future_timestamp - current_timestamp
+        if delay_between_notifications is None:
+            delay_between_notifications = difference * 0.1
         since_prev_msg = current_timestamp - prev_msg_time
         if difference > 0:
-            if since_prev_msg >= 15:
+            if since_prev_msg >= delay_between_notifications:
                 hms_format = str(timedelta(seconds=difference))
-                print(f'Компьютер будет выключен через {hms_format}')
+                notifier.print_to_system(f'Компьютер будет выключен через {hms_format}')
                 prev_msg_time = current_timestamp
-            sleep(10)
+            sleep(5)
         else:
-            print('Время пришло')
+            notifier.print_to_system('Время пришло')
             system('shutdown -s -t 60')
             break
